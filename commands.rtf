@@ -1,0 +1,68 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2636
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fmodern\fcharset0 Courier;\f2\froman\fcharset0 Times-Roman;
+}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\margl1440\margr1440\vieww17280\viewh13200\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs46 \cf0 Commands: \
+\
+Set up npm: \
+npm init -y\
+npm install \'97save-dev hardhat\
+\
+hardhat:\
+npx hardhat\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs48 \cf0 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 npm install @openzeppelin/contracts
+\fs26 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs46 \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 \
+optional?\
+npx hardhat compile\
+npm hardhat test\
+\
+test: \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs48 \cf0 \expnd0\expndtw0\kerning0
+npx hardhat run scripts/run.js\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs46 \cf0 \kerning1\expnd0\expndtw0 \
+\
+create persistent local network: \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs48 \cf0 \expnd0\expndtw0\kerning0
+npx hardhat node\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs46 \cf0 \kerning1\expnd0\expndtw0 \
+deploying to rinkeby: \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs44 \cf0 \expnd0\expndtw0\kerning0
+npx hardhat run scripts/deploy.js --network rinkeby\
+\
+everytime you redeploy: 
+\f2\fs38 \
+1. Deploy again using 
+\f1\fs40 npx hardhat run scripts/deploy.js --network rinkeby
+\f2\fs38 \
+2. Change 
+\f1\fs40 contractAddress
+\f2\fs38  in 
+\f1\fs40 App.js
+\f2\fs38  to be the new contract address we got from the step above in the terminal just like we did before the first time we deployed.\
+3. Get the updated abi file from 
+\f1\fs40 artifacts
+\f2\fs38  like we did before and copy-paste it into src/utils/WavePortal.json
+\f0\fs46 \kerning1\expnd0\expndtw0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+}
