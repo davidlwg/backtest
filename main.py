@@ -17,14 +17,15 @@ import backtrader as bt
 
 class TestStrategy(bt.Strategy):
     params = (
-        ('exit_bars', 5),
-        ('ma_period', 15)
+        ('ma_period', 15),
+        ('print_log', False)
     )
 
-    def log(self, txt, dt=None):
+    def log(self, txt, dt=None, do_print=False):
         # logging function
-        dt = dt or self.datas[0].datetime.date(0)
-        print(f'{dt.isoformat()}, {txt}')
+        if self.params.print_log or do_print:
+            dt = dt or self.datas[0].datetime.date(0)
+            print(f'{dt.isoformat()}, {txt}')
 
     def __init__(self):
         self.data_close = self.datas[0].close  # keep reference to the "close" line in the data[0] data series
@@ -95,12 +96,16 @@ class TestStrategy(bt.Strategy):
                 self.log(f'SELL CREATE, {self.data_close[0]}')
                 self.order = self.sell()
 
+    def stop(self):
+        self.log('(MA Period %2d) Ending Value %.2f'
+                 % (self.params.ma_period, self.broker.getvalue()), do_print=True)
+
 
 if __name__ == '__main__':
     # Create a cerebro entity
     cerebo = bt.Cerebro()
 
-    cerebo.addstrategy(TestStrategy)
+    cerebo.optstrategy(TestStrategy, ma_period=range(10, 31))
 
     # get data
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -119,8 +124,8 @@ if __name__ == '__main__':
 
     print('Starting Portfolio Value: %.2f' % cerebo.broker.get_value())
 
-    cerebo.run()
+    cerebo.run(maxcpus=1)
 
     print('Final Portfolio Value: %.2f' % cerebo.broker.get_value())
 
-    cerebo.plot()
+    # cerebo.plot()
