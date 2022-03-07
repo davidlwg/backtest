@@ -3,7 +3,6 @@ import sys
 import quantstats as qs
 import backtrader as bt
 
-
 # qs.extend_pandas()
 # btc = qs.utils.download_returns("BTC-USD")
 # print(btc)
@@ -19,6 +18,7 @@ import backtrader as bt
 class TestStrategy(bt.Strategy):
     params = (
         ('exit_bars', 5),
+        ('ma_period', 15)
     )
 
     def log(self, txt, dt=None):
@@ -32,6 +32,18 @@ class TestStrategy(bt.Strategy):
         self.bar_executed = None  # Bar where order was executed
         self.buy_price = None
         self.buy_comm = None
+
+        # SMA indicator
+        self.sma = bt.indicators.MovingAverageSimple(self.datas[0], period=self.params.ma_period)
+
+        # indicators for plotting
+        bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
+        bt.indicators.WeightedMovingAverage(self.datas[0], period=25, subplot=True)
+        bt.indicators.Stochastic(self.datas[0])
+        bt.indicators.MACDHisto(self.datas[0])
+        rsi = bt.indicators.RSI(self.datas[0])
+        bt.indicators.SmoothedMovingAverage(rsi, period=10)
+        bt.indicators.ATR(self.datas[0], plot=False)
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -74,15 +86,12 @@ class TestStrategy(bt.Strategy):
             return
 
         if not self.position:
-
-            # if closing has decreased 3 days in a row, buy
-            if len(self) > 2 and self.data_close[0] < self.data_close[-1]:
-                if self.data_close[-1] < self.data_close[-2]:
-                    self.log(f'BUY CREATE, {self.data_close[0]}')
-                    self.order = self.buy()
+            if self.data_close[0] > self.sma[0]:
+                self.log(f'BUY CREATE, {self.data_close[0]}')
+                self.order = self.buy()
 
         else:
-            if self.bar_executed is not None and len(self) >= (self.bar_executed + self.params.exit_bars):
+            if self.bar_executed is not None and self.data_close[0] < self.sma[0]:
                 self.log(f'SELL CREATE, {self.data_close[0]}')
                 self.order = self.sell()
 
@@ -113,3 +122,5 @@ if __name__ == '__main__':
     cerebo.run()
 
     print('Final Portfolio Value: %.2f' % cerebo.broker.get_value())
+
+    cerebo.plot()
