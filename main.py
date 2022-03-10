@@ -1,24 +1,14 @@
 import os.path
 import sys
-import quantstats as qs
 import backtrader as bt
-
-# qs.extend_pandas()
-# btc = qs.utils.download_returns("BTC-USD")
-# print(btc)
-# btc.to_csv(r'/Users/david/Projects/backtest/btc-returns.csv')
-# qs.stats.sharpe(btc)
-# print(btc.sharpe())
-
-#
-# qs.plots.snapshot(btc, title="btc performance")
-# qs.reports.html(btc, "BTC-USD", output="file")
-
 
 class TestStrategy(bt.Strategy):
     params = (
-        ('ma_period', 15),
-        ('print_log', False)
+        ('ma_period', 33),
+        ('print_log', True),
+        ('sma', True),
+        ('ema', False),
+        ('macd', False)
     )
 
     def log(self, txt, dt=None, do_print=False):
@@ -35,16 +25,22 @@ class TestStrategy(bt.Strategy):
         self.buy_comm = None
 
         # SMA indicator
-        self.sma = bt.indicators.MovingAverageSimple(self.datas[0], period=self.params.ma_period)
+        if self.params.sma:
+            self.indicator = bt.indicators.MovingAverageSimple(self.datas[0], period=self.params.ma_period)
+        elif self.params.ema:
+            self.indicator = bt.indicators.ExponentialMovingAverage(self.datas[0], period=self.params.ma_period)
+        elif self.params.macd:
+            self.macd = bt.indicators.MACD(self.datas[0], period_me1=12, period_me2=26, period_signal=9)
+            self.mcross = bt.indicators.CrossOver(self.macd.macd, self.macd.signal)
 
-        # indicators for plotting
-        bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
-        bt.indicators.WeightedMovingAverage(self.datas[0], period=25, subplot=True)
-        bt.indicators.Stochastic(self.datas[0])
-        bt.indicators.MACDHisto(self.datas[0])
-        rsi = bt.indicators.RSI(self.datas[0])
-        bt.indicators.SmoothedMovingAverage(rsi, period=10)
-        bt.indicators.ATR(self.datas[0], plot=False)
+        # # indicators for plotting
+        # bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
+        # bt.indicators.WeightedMovingAverage(self.datas[0], period=25, subplot=True)
+        # bt.indicators.Stochastic(self.datas[0])
+        # bt.indicators.MACDHisto(self.datas[0])
+        # rsi = bt.indicators.RSI(self.datas[0])
+        # bt.indicators.SmoothedMovingAverage(rsi, period=10)
+        # bt.indicators.ATR(self.datas[0], plot=False)
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -80,21 +76,39 @@ class TestStrategy(bt.Strategy):
 
         self.log(f'OPERATION PROFIT, GROSS {trade.pnl}, NET {trade.pnlcomm}')
 
+    def __moving_average(self):
+        if not self.position:
+            if self.data_close[0] > self.indicator[0]:
+                self.log(f'BUY CREATE, {self.data_close[0]}')
+                self.order = self.buy()
+
+        else:
+            if self.bar_executed is not None and self.data_close[0] < self.indicator[0]:
+                self.log(f'SELL CREATE, {self.data_close[0]}')
+                self.order = self.sell()
+
+    def __macd(self):
+        if not self.position:
+            if self.mcross > 0:
+                self.log(f'BUY CREATE, {self.data_close[0]}')
+                self.order = self.buy()
+
+        else:
+            if self.bar_executed is not None and self.mcross < 0:
+                self.log(f'SELL CREATE, {self.data_close[0]}')
+                self.order = self.sell()
+
     def next(self):
         self.log(f'Close, {self.data_close[0]}')
 
         if self.order:
             return
 
-        if not self.position:
-            if self.data_close[0] > self.sma[0]:
-                self.log(f'BUY CREATE, {self.data_close[0]}')
-                self.order = self.buy()
+        if self.params.sma or self.params.ema:
+            self.__moving_average()
 
-        else:
-            if self.bar_executed is not None and self.data_close[0] < self.sma[0]:
-                self.log(f'SELL CREATE, {self.data_close[0]}')
-                self.order = self.sell()
+        if self.params.macd:
+            self.__macd()
 
     def stop(self):
         self.log('(MA Period %2d) Ending Value %.2f'
@@ -105,7 +119,8 @@ if __name__ == '__main__':
     # Create a cerebro entity
     cerebo = bt.Cerebro()
 
-    cerebo.optstrategy(TestStrategy, ma_period=range(10, 31))
+    # cerebo.optstrategy(TestStrategy, ma_period=range(10, 140))
+    cerebo.addstrategy(TestStrategy)
 
     # get data
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -128,4 +143,4 @@ if __name__ == '__main__':
 
     print('Final Portfolio Value: %.2f' % cerebo.broker.get_value())
 
-    # cerebo.plot()
+    cerebo.plot()
