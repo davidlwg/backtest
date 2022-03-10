@@ -7,10 +7,11 @@ import quantstats as qs
 class TestStrategy(bt.Strategy):
     params = (
         ('ma_period', 33),
-        ('print_log', True),
+        ('print_log', False),
         ('sma', False),
         ('ema', False),
-        ('macd', True)
+        ('macd', True),
+        ('risk_percentage', 0.03)
     )
 
     def log(self, txt, dt=None, do_print=False):
@@ -98,11 +99,15 @@ class TestStrategy(bt.Strategy):
 
         if not self.position:
             if self.mcross > 0:
-                self.log(f'BUY CREATE, {close}')
-                self.order = self.buy()
-
                 stop_loss_dist = self.atr[0] * 3
                 self.stop_loss = close - stop_loss_dist
+
+                position_size = (self.broker.getvalue() * self.params.risk_percentage)
+                self.position_qty = position_size / stop_loss_dist
+                print(self.position_qty)
+
+                self.log(f'BUY CREATE, {close}')
+                self.order = self.buy(size=self.position_qty)
 
         else:
             stop_loss = self.stop_loss
@@ -110,7 +115,8 @@ class TestStrategy(bt.Strategy):
             if self.bar_executed is not None:
                 if close < stop_loss:
                     self.log(f'SELL CREATE, {close}')
-                    self.order = self.sell()
+                    self.order = self.sell(size=self.position_qty)
+                    self.position_qty = 0
                 else:
                     new_stop_loss_dist = self.atr[0] * 3
                     self.stop_loss = max(self.stop_loss, close - new_stop_loss_dist)
@@ -130,6 +136,31 @@ class TestStrategy(bt.Strategy):
     def stop(self):
         self.log('(MA Period %2d) Ending Value %.2f'
                  % (self.params.ma_period, self.broker.getvalue()), do_print=True)
+
+
+def simple():
+    cerebo.run(maxcpus=1)
+
+    print('Final Portfolio Value: %.2f' % cerebo.broker.get_value())
+
+
+def full():
+    # export to quantstats
+    # https://algotrading101.com/learn/backtrader-for-backtesting/
+    cerebo.addanalyzer(btanalyze.PyFolio, _name="Quantstats")
+
+    results = cerebo.run(maxcpus=1)
+    result = results[0]
+
+    portfolio_stats = result.analyzers.getbyname("Quantstats")
+    return_stats, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
+    return_stats.index = return_stats.index.tz_convert(None)
+
+    print('Final Portfolio Value: %.2f' % cerebo.broker.get_value())
+
+    qs.reports.html(return_stats, "BTC-USD", output="file")
+
+    cerebo.plot()
 
 
 if __name__ == '__main__':
@@ -157,19 +188,5 @@ if __name__ == '__main__':
 
     print('Starting Portfolio Value: %.2f' % cerebo.broker.get_value())
 
-    # export to quantstats
-    # https://algotrading101.com/learn/backtrader-for-backtesting/
-    cerebo.addanalyzer(btanalyze.PyFolio, _name="Quantstats")
-
-    results = cerebo.run(maxcpus=1)
-    result = results[0]
-
-    portfolio_stats = result.analyzers.getbyname("Quantstats")
-    return_stats, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
-    return_stats.index = return_stats.index.tz_convert(None)
-
-    print('Final Portfolio Value: %.2f' % cerebo.broker.get_value())
-
-    qs.reports.html(return_stats, "BTC-USD", output="file")
-
-    cerebo.plot()
+    # simple()
+    full()
