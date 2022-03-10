@@ -1,6 +1,8 @@
 import os.path
 import sys
 import backtrader as bt
+import backtrader.analyzers as btanalyze
+import quantstats as qs
 
 class TestStrategy(bt.Strategy):
     params = (
@@ -139,7 +141,8 @@ if __name__ == '__main__':
 
     # get data
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    data_path = os.path.join(modpath, 'btc_daily.csv')
+    data_path = os.path.join(modpath, '../data/btc_OHLC.csv')
+    print(data_path)
 
     # create Data Feed
     data_feed = bt.feeds.YahooFinanceCSVData(dataname=data_path, reverse=False)
@@ -150,12 +153,23 @@ if __name__ == '__main__':
 
     # 0.1%
     cerebo.broker.setcommission(commission=0.001)
-    cerebo.addsizer(bt.sizers.FixedSize, stake=2)
+    cerebo.addsizer(bt.sizers.FixedSize, stake=20)
 
     print('Starting Portfolio Value: %.2f' % cerebo.broker.get_value())
 
-    cerebo.run(maxcpus=1)
+    # export to quantstats
+    # https://algotrading101.com/learn/backtrader-for-backtesting/
+    cerebo.addanalyzer(btanalyze.PyFolio, _name="Quantstats")
+
+    results = cerebo.run(maxcpus=1)
+    result = results[0]
+
+    portfolio_stats = result.analyzers.getbyname("Quantstats")
+    return_stats, positions, transactions, gross_lev = portfolio_stats.get_pf_items()
+    return_stats.index = return_stats.index.tz_convert(None)
 
     print('Final Portfolio Value: %.2f' % cerebo.broker.get_value())
+
+    qs.reports.html(return_stats, "BTC-USD", output="file")
 
     cerebo.plot()

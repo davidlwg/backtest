@@ -10,4 +10,4 @@ data = yf.download("BTC-USD", group_by="ticker")
 print(data)
 print(type(data))
 
-data.to_csv(r'/Users/david/Projects/backtest/btc_data.csv')
+data.to_csv(r'/Users/david/Projects/backtest/data/btc_OHLC.csv')
