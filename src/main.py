@@ -4,6 +4,7 @@ import backtrader as bt
 import backtrader.analyzers as btanalyze
 import quantstats as qs
 
+
 class TestStrategy(bt.Strategy):
     params = (
         ('ma_period', 33),

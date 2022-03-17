@@ -6,7 +6,8 @@
 - [ ] Volume: OBV
 - [ ] Shorting
 - [ ] Trade idea: if it’s more volatile than normal (ATR), check volume -> enter trade
-- [ ] Kelly Criterion 
+- [ ] Kelly Criterion
+- [ ] figure out what quantstats stuff is 
 
 ### Done: 
 - [x] Position-sizing
